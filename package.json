@@ -1,0 +1,26 @@
+{
+  "name": "gestao-cemiterio",
+  "license": "MIT",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c blue,green \"npm run dev -w @cemiterio/server\" \"npm run dev -w @cemiterio/web\"",
+    "build": "npm run build -w @cemiterio/web",
+    "start": "npm run start -w @cemiterio/server",
+    "test": "npm run test -w @cemiterio/server",
+    "db:generate": "npm run db:generate -w @cemiterio/server",
+    "typecheck": "tsc -p apps/server/tsconfig.json && tsc -p apps/web/tsconfig.json"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6",
+    "typescript": "^7.0.2"
+  }
+}

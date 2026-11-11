@@ -1,0 +1,24 @@
+node_modules/
+dist/
+*.log
+
+# Dados reais: banco, backups, fotos, documentos, certificados, acessos
+data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+backups/
+uploads/
+*.pem
+*.key
+*.crt
+
+# Variáveis de ambiente (só o exemplo vai para o Git)
+.env
+.env.*
+!.env.example
+
+# Sistema / editor
+.DS_Store
+Thumbs.db

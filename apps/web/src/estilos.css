@@ -1,0 +1,128 @@
+/* ---------- Base visual (vale para todas as telas) ---------- */
+
+body {
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv11', 'ss01'; /* Inter: "1" e "a" mais fáceis de distinguir */
+}
+::selection {
+  background: var(--mantine-color-teal-2);
+  color: var(--mantine-color-teal-9);
+}
+.mantine-Title-root {
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/*
+ * Etiquetas (situação, pagamento etc.): em maiúsculas minúsculas e um pouco maiores.
+ * As letras de 11 px em CAIXA ALTA ficavam difíceis de ler.
+ */
+.mantine-Badge-root {
+  --badge-fz-xs: 0.6875rem;
+  --badge-fz-sm: 0.75rem;
+  --badge-fz-md: 0.78125rem;
+  --badge-height-md: 1.375rem;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+
+/*
+ * Botões pequenos (size="xs") eram usados em ações importantes (Vender, Registrar sepultamento,
+ * Salvar...) e ficavam com 30 px de altura e letra de 12 px: difíceis de ler e de acertar.
+ * Ficam um pouco maiores, sem deixar de ser os "botões secundários" dos quadros.
+ */
+.mantine-Button-root {
+  --button-height-xs: 2rem;
+  --button-fz-xs: 0.8125rem;
+  --button-padding-x-xs: 0.75rem;
+}
+
+/* Tabelas: cabeçalho discreto e números alinhados */
+.mantine-Table-th {
+  color: var(--mantine-color-gray-7);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.mantine-Table-thead {
+  background: var(--mantine-color-gray-0);
+}
+
+/* Menu lateral: item atual em negrito, com fundo verde bem claro */
+.mantine-AppShell-navbar .mantine-NavLink-root {
+  border-radius: var(--mantine-radius-md);
+  color: var(--mantine-color-gray-8);
+}
+.mantine-AppShell-navbar .mantine-NavLink-root[data-active] {
+  color: var(--mantine-color-teal-9);
+  font-weight: 600;
+}
+.mantine-AppShell-navbar .mantine-NavLink-label {
+  font-weight: inherit;
+}
+
+/*
+ * Quadros com tabela (Card p={0} className="card-tabela"): a primeira e a última coluna ficam
+ * a 16 px da borda, a mesma margem do título do quadro e dos outros quadros da tela.
+ */
+.card-tabela .mantine-Table-th:first-child,
+.card-tabela .mantine-Table-td:first-child {
+  padding-inline-start: var(--mantine-spacing-md);
+}
+.card-tabela .mantine-Table-th:last-child,
+.card-tabela .mantine-Table-td:last-child {
+  padding-inline-end: var(--mantine-spacing-md);
+}
+
+/* Contorno de foco mais visível para quem usa o teclado */
+:focus-visible {
+  outline-color: var(--mantine-color-teal-6);
+}
+
+/* Rótulo do código ao lado do pin no mapa */
+.leaflet-tooltip.rotulo-pin {
+  background: rgba(255, 255, 255, 0.9);
+  border: 0;
+  box-shadow: none;
+  padding: 0 4px;
+  font: 600 11px ui-monospace, Consolas, monospace;
+}
+.leaflet-tooltip.rotulo-pin::before {
+  display: none;
+}
+.item-busca:hover {
+  background: var(--mantine-color-gray-1);
+}
+/* O CSS do Leaflet dá margem grande a <p> dentro do balão; os textos do Mantine são <p>. */
+.leaflet-popup-content p {
+  margin: 0;
+}
+
+/* Impressão de relatórios em A4: só o conteúdo, sem menu. */
+@media print {
+  .mantine-AppShell-navbar,
+  .mantine-AppShell-header,
+  .nao-imprimir {
+    display: none !important;
+  }
+  .mantine-AppShell-main {
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  .so-impressao {
+    display: block !important;
+  }
+}
+.so-impressao {
+  display: none;
+}
+
+/*
+ * O Leaflet usa z-index de até 1000 nas camadas e controles do mapa, acima das janelas
+ * (modais) do Mantine. "isolation: isolate" prende essas camadas dentro do próprio mapa,
+ * então qualquer janela, menu ou aviso aberto fica sempre por cima.
+ */
+.leaflet-container {
+  isolation: isolate;
+}

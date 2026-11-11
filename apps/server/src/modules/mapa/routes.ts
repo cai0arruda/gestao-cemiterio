@@ -29,7 +29,7 @@ export async function rotasMapa(app: FastifyInstance, { db, config }: AppContext
     setores: listarSetores(db),
   }));
 
-  // Qualquer usuário posiciona sepulturas (cadastro em campo); o resto é do administrador.
+  // Qualquer usuário posiciona sepulturas (marcando sobre a foto de drone); o resto é do administrador.
   app.put('/api/sepulturas/:id/localizacao', async (req) => {
     const { id } = validar(idParam, req.params);
     const d = validar(localizacaoSchema, req.body);

@@ -2,8 +2,8 @@ import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 import L from 'leaflet';
 import { useEffect } from 'react';
-import { ImageOverlay, Marker, useMap } from 'react-leaflet';
-import { larguraEmMetros, limitesProporcionais, type AneisPoligono } from '@cemiterio/shared';
+import { useMap } from 'react-leaflet';
+import type { AneisPoligono } from '@cemiterio/shared';
 
 /** Converte a camada desenhada para os anéis em [longitude, latitude] (GeoJSON). */
 export function aneisDaCamada(camada: L.Polygon): AneisPoligono {
@@ -57,61 +57,4 @@ export function EditarFormaSetor({
     };
   }, [mapa, aneis, cor, camadaRef]);
   return null;
-}
-
-const iconeCanto = (texto: string) =>
-  L.divIcon({
-    className: '',
-    html: `<div style="background:#fab005;color:#000;font:600 11px sans-serif;padding:2px 6px;border-radius:4px;border:2px solid #fff;white-space:nowrap;transform:translate(-50%,-50%)">${texto}</div>`,
-  });
-
-/**
- * Ajuste da imagem aérea mantendo a proporção da foto:
- * o canto de baixo à esquerda MOVE a imagem e o de cima à direita muda o TAMANHO.
- */
-export function AjustarImagemAerea({
-  url,
-  limites,
-  opacidade,
-  proporcao,
-  aoMudar,
-}: {
-  url: string;
-  limites: [[number, number], [number, number]];
-  opacidade: number;
-  proporcao: number;
-  aoMudar: (l: [[number, number], [number, number]]) => void;
-}) {
-  const [[s, o], [n, l]] = limites;
-  const largura = larguraEmMetros(limites);
-  return (
-    <>
-      <ImageOverlay url={url} bounds={limites} opacity={opacidade} />
-      <Marker
-        position={[s, o]}
-        draggable
-        icon={iconeCanto('✥ mover')}
-        eventHandlers={{
-          drag: (e) => {
-            const p = (e.target as L.Marker).getLatLng();
-            aoMudar([[p.lat, p.lng], [p.lat + (n - s), p.lng + (l - o)]]);
-          },
-        }}
-      />
-      <Marker
-        position={[n, l]}
-        draggable
-        icon={iconeCanto('⤡ tamanho')}
-        eventHandlers={{
-          drag: (e) => {
-            const p = (e.target as L.Marker).getLatLng();
-            const nova = larguraEmMetros([[s, o], [s, p.lng]]);
-            if (nova > 2) aoMudar(limitesProporcionais(s, o, nova, proporcao));
-          },
-          // Ao soltar, o marcador volta para o canto certo (a proporção pode ter mudado a altura).
-          dragend: () => aoMudar(limitesProporcionais(s, o, Math.max(largura, 2), proporcao)),
-        }}
-      />
-    </>
-  );
 }

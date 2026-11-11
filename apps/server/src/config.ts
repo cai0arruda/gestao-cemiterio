@@ -16,7 +16,7 @@ export interface Config {
   sessaoMinutosInatividade: number;
   backupDiasRetencao: number;
   webDist: string;
-  /** Certificado para HTTPS local (o GPS do celular exige HTTPS). */
+  /** Certificado para HTTPS local (opcional). */
   https: { cert: string; key: string } | null;
 }
 

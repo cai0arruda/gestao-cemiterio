@@ -15,8 +15,8 @@ Sistema de gestão de sócios, sepulturas e anuidades. Veja a arquitetura comple
   com as regras do direito de sepultamento, busca de "onde está sepultado fulano" e sucessão
   (familiar assume as sepulturas de um sócio falecido). Exumação: o registro do sepultamento fica no histórico
   e o lugar é liberado (com opção de transferir os restos para outra sepultura, como o ossuário).
-- Fase 5: mapa com imagem de satélite, pin de cada sepultura (cor por situação ou por pagamento),
-  busca no mapa, setores desenhados, imagem aérea própria (drone) e cadastro em campo pelo celular.
+- Fase 5: mapa sobre a foto de drone do cemitério, pin de cada sepultura (cor por situação ou por pagamento),
+  busca no mapa, setores desenhados, imagem aérea própria (drone); cada sepultura é marcada clicando nela sobre a foto de drone.
 - Fase 6: relatórios — visão geral, inadimplência e lembrete de Finados com mensagem pronta no
   WhatsApp, fechamento de caixa (tela, A4 e impressora térmica), arrecadação por período,
   aniversariantes e sepultamentos, com exportação para planilha (CSV).
@@ -89,22 +89,15 @@ acrescente `-IniciarComWindows` ao comando.
 
 ## Mapa
 
-- **Primeira vez:** em *Mapa*, aproxime até o cemitério e clique em **Abrir sempre nesta posição**.
 - **Setores:** *Desenhar novo setor* → clique nos cantos e feche no primeiro ponto. As sepulturas
   dentro do desenho passam a pertencer ao setor automaticamente.
-- **Foto de drone:** *Enviar imagem aérea* e depois *Ajustar posição*. Arraste **✥ mover** para
-  posicionar e **⤡ tamanho** para aumentar/diminuir (a proporção da foto é mantida) ou digite a
-  largura em metros, até casar com o satélite. Use a foto "de cima", com o norte para cima.
-  Com a imagem ajustada, ela vira o **fundo padrão** de todos os mapas; satélite e ruas ficam no
-  botão de camadas.
-- **Imagem de satélite:** vem da Esri (gratuita, sem cadastro). O satélite do Google exige uma
-  chave da API do Google Maps com conta de faturamento; se quiserem usar, dá para acrescentar depois.
+- **Foto de drone:** é o único fundo do mapa (não há satélite nem ruas). Envie em *Enviar imagem
+  aérea (drone)*; o mapa sempre abre enquadrado nela. Ao trocar a foto, a nova ocupa o mesmo lugar
+  da antiga, para as sepulturas já marcadas continuarem no lugar. Use a foto "de cima", em boa resolução.
 
-### Cadastro em campo pelo celular (GPS)
+### HTTPS na rede local (opcional)
 
-O navegador do celular só libera o GPS em **conexão segura (HTTPS)**. Sem isso, a tela de campo
-funciona do mesmo jeito, mas a posição é marcada tocando no mapa. Quando o sistema estiver online
-(com domínio), o HTTPS já vem pronto. Para usar o GPS antes disso, na rede local:
+Quando o sistema estiver online (com domínio), o HTTPS já vem pronto. Para usar HTTPS antes disso, na rede local:
 
 1. Instale o [mkcert](https://github.com/FiloSottile/mkcert) no PC (no Windows: `winget install FiloSottile.mkcert`).
 2. Na pasta do projeto, gere o certificado com o IP do PC:
@@ -120,7 +113,7 @@ funciona do mesmo jeito, mas a posição é marcada tocando no mapa. Quando o si
 3. No `.env`, descomente `HTTPS_CERT` e `HTTPS_KEY` e troque o `PUBLIC_URL` para `https://192.168.0.10:3000`.
 4. No celular, instale o certificado raiz do mkcert (arquivo `rootCA.pem`, que fica na pasta mostrada
    por `mkcert -CAROOT`) em *Configurações → Segurança → Instalar certificado*. Sem esse passo o celular
-   mostra um aviso de site inseguro e pode continuar bloqueando o GPS.
+   mostra um aviso de site inseguro.
 
 ## Desenvolvimento
 

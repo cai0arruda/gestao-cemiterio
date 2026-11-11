@@ -7,7 +7,6 @@ import {
   IconReportAnalytics,
   IconGrave2,
   IconMap,
-  IconMapPinPlus,
   IconSettings,
   IconCross,
   IconDatabaseExport,
@@ -28,7 +27,6 @@ const itens = [
   { to: '/cadastro-rapido', rotulo: 'Cadastro rápido', icone: IconUserPlus },
   { to: '/sepulturas', rotulo: 'Sepulturas', icone: IconGrave2 },
   { to: '/mapa', rotulo: 'Mapa', icone: IconMap },
-  { to: '/campo', rotulo: 'Cadastro em campo', icone: IconMapPinPlus },
   { to: '/financeiro', rotulo: 'Financeiro', icone: IconChartBar },
   { to: '/relatorios', rotulo: 'Relatórios', icone: IconReportAnalytics },
 ];
@@ -98,7 +96,10 @@ export function Layout() {
       </AppShell.Navbar>
 
       <AppShell.Main bg="gray.0">
-        <Outlet />
+        {/* A chave reinicia a animação de entrada a cada troca de tela. */}
+        <div key={pathname} className="entrada-tela">
+          <Outlet />
+        </div>
       </AppShell.Main>
       <TrocarSenha aberto={senhaAberta} fechar={senha.close} />
     </AppShell>

@@ -18,7 +18,6 @@ import { Usuarios } from './pages/admin/Usuarios';
 import { Valores } from './pages/admin/Valores';
 import { Atendimento } from './pages/Atendimento';
 import { CaixaImpressao } from './pages/CaixaImpressao';
-import { Campo } from './pages/Campo';
 import { Relatorios } from './pages/Relatorios';
 import { Financeiro } from './pages/Financeiro';
 import { Mapa } from './pages/Mapa';
@@ -65,6 +64,8 @@ const tema = createTheme({
   components: {
     Table: { defaultProps: { tabularNums: true } },
     Paper: { defaultProps: { radius: 'md' } },
+    // Janelas surgem com um leve "zoom" em vez de só aparecer.
+    Modal: { defaultProps: { transitionProps: { transition: 'pop', duration: 180, timingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)' } } },
   },
 });
 
@@ -109,7 +110,6 @@ function Rotas() {
         <Route path="/sepulturas" element={<SepulturasLista />} />
         <Route path="/sepulturas/:id" element={<SepulturaPagina />} />
         <Route path="/mapa" element={<Mapa />} />
-        <Route path="/campo" element={<Campo />} />
         {admin && <Route path="/admin/valores" element={<Valores />} />}
         {admin && <Route path="/admin/configuracoes" element={<Configuracoes />} />}
         {admin && <Route path="/admin/usuarios" element={<Usuarios />} />}

@@ -5,7 +5,7 @@ import icone from 'leaflet/dist/images/marker-icon.png';
 import sombra from 'leaflet/dist/images/marker-shadow.png';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { ImageOverlay, LayerGroup, LayersControl, TileLayer, useMap } from 'react-leaflet';
+import { ImageOverlay, useMap } from 'react-leaflet';
 import type { ConfigMapa, PinSepultura, Setor, SituacaoSepultura } from '@cemiterio/shared';
 import { api } from '../../api/client';
 
@@ -34,61 +34,27 @@ export const COR_SITUACAO: Record<SituacaoSepultura, string> = {
   ocupada: '#868e96',
 };
 
-const SATELITE = {
-  url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  attribution: 'Imagens &copy; Esri, Maxar, Earthstar Geographics',
-};
-const RUAS = { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; colaboradores do OpenStreetMap' };
-
 /**
- * Fundo do mapa. Se houver imagem aérea própria (drone), ela é o fundo padrão — mais nítida
- * que o satélite. Satélite e ruas continuam no botão de camadas para comparar.
+ * Fundo do mapa: só a foto do drone, sem satélite nem ruas. As sepulturas e os setores
+ * ficam desenhados por cima dela.
  */
-export function CamadasBase({ config, semImagemAerea = false }: { config?: ConfigMapa; semImagemAerea?: boolean }) {
-  const aerea = semImagemAerea ? null : config?.imagem_aerea;
-  const imagem = aerea && (
-    <ImageOverlay url={`/api/mapa/imagem-aerea.jpg?v=${aerea.versao}`} bounds={aerea.limites} opacity={aerea.opacidade} />
-  );
-  return (
-    <LayersControl position="topright">
-      {aerea && (
-        <LayersControl.BaseLayer checked name="Imagem do drone">
-          <LayerGroup>{imagem}</LayerGroup>
-        </LayersControl.BaseLayer>
-      )}
-      {aerea && (
-        <LayersControl.BaseLayer name="Drone sobre o satélite">
-          <LayerGroup>
-            <TileLayer url={SATELITE.url} attribution={SATELITE.attribution} maxNativeZoom={19} maxZoom={22} />
-            {imagem}
-          </LayerGroup>
-        </LayersControl.BaseLayer>
-      )}
-      <LayersControl.BaseLayer checked={!aerea} name="Satélite">
-        <TileLayer url={SATELITE.url} attribution={SATELITE.attribution} maxNativeZoom={19} maxZoom={22} />
-      </LayersControl.BaseLayer>
-      <LayersControl.BaseLayer name="Ruas">
-        <TileLayer url={RUAS.url} attribution={RUAS.attribution} maxNativeZoom={19} maxZoom={22} />
-      </LayersControl.BaseLayer>
-    </LayersControl>
-  );
+export function CamadasBase({ config }: { config?: ConfigMapa }) {
+  const aerea = config?.imagem_aerea;
+  if (!aerea) return null;
+  return <ImageOverlay url={`/api/mapa/imagem-aerea.jpg?v=${aerea.versao}`} bounds={aerea.limites} opacity={1} />;
 }
 
 /**
- * Posição inicial: com imagem do drone, abre enquadrado nela (a não ser que a posição
- * salva já esteja dentro da imagem). Sem imagem, usa a posição salva ou o Brasil.
+ * Posição inicial: com a foto do drone, abre sempre enquadrado nela.
+ * Sem foto, usa a posição salva ou o Brasil.
  */
 export function vistaInicial(config?: ConfigMapa): { centro: [number, number]; zoom: number; enquadrar: boolean } {
-  const p = config?.posicao;
   const aerea = config?.imagem_aerea;
   if (aerea) {
-    const limites = L.latLngBounds(aerea.limites);
-    if (!p || !limites.contains([p.latitude, p.longitude])) {
-      const c = limites.getCenter();
-      return { centro: [c.lat, c.lng], zoom: 17, enquadrar: true };
-    }
+    const c = L.latLngBounds(aerea.limites).getCenter();
+    return { centro: [c.lat, c.lng], zoom: 17, enquadrar: true };
   }
-  const q = p ?? POSICAO_INICIAL;
+  const q = config?.posicao ?? POSICAO_INICIAL;
   return { centro: [q.latitude, q.longitude], zoom: q.zoom, enquadrar: false };
 }
 
@@ -107,8 +73,8 @@ export function LimitarAImagem({ config, enquadrar }: { config?: ConfigMapa; enq
     // Espera o mapa ter o tamanho final na tela; senão o zoom calculado sai pequeno demais.
     const t = setTimeout(() => {
       mapa.invalidateSize();
-      mapa.setMinZoom(Math.max(mapa.getBoundsZoom(limites.pad(0.6)), 1));
-      mapa.setMaxBounds(limites.pad(0.6));
+      mapa.setMinZoom(Math.max(mapa.getBoundsZoom(limites.pad(0.15)), 1));
+      mapa.setMaxBounds(limites.pad(0.15));
       if (enquadrar) mapa.fitBounds(limites, { padding: [10, 10], animate: false });
     }, 50);
     return () => clearTimeout(t);

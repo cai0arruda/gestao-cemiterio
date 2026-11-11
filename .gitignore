@@ -4,6 +4,7 @@ dist/
 
 # Dados reais: banco, backups, fotos, documentos, certificados, acessos
 data/
+data-teste/
 *.db
 *.db-shm
 *.db-wal

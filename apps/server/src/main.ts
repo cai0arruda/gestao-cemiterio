@@ -11,7 +11,7 @@ const config = carregarConfig();
 const db = abrirBanco(path.join(config.dataDir, 'cemiterio.db'));
 const opcoes = {
   logger: { level: 'info' },
-  // HTTPS opcional (ver README): necessário para o GPS do celular na rede local.
+  // HTTPS opcional (ver README): para acessar com conexão segura na rede local.
   ...(config.https ? { https: { cert: fs.readFileSync(config.https.cert), key: fs.readFileSync(config.https.key) } } : {}),
 } as FastifyServerOptions;
 const app = await criarApp({ db, config }, opcoes);

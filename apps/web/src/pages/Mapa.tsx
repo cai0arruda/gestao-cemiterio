@@ -10,10 +10,8 @@ import {
   Group,
   Loader,
   Modal,
-  NumberInput,
   ScrollArea,
   SegmentedControl,
-  Slider,
   Stack,
   Switch,
   Text,
@@ -25,7 +23,7 @@ import {
 import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
-import { IconCurrentLocation, IconEdit, IconPhotoUp, IconPolygon, IconSearch, IconTrash } from '@tabler/icons-react';
+import { IconEdit, IconPhotoUp, IconPolygon, IconSearch, IconTrash } from '@tabler/icons-react';
 import { useQueryClient } from '@tanstack/react-query';
 import type L from 'leaflet';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -34,14 +32,13 @@ import { larguraEmMetros, limitesProporcionais, normalizarTexto, type AneisPolig
 import { api, mensagemDeErro } from '../api/client';
 import { useAuth } from '../auth';
 import { COR_SITUACAO, useMapa } from '../components/mapa/base';
-import { AjustarImagemAerea, DesenharSetor, EditarFormaSetor, aneisDaCamada } from '../components/mapa/editores';
+import { DesenharSetor, EditarFormaSetor, aneisDaCamada } from '../components/mapa/editores';
 import { corDoPin, MapaGeral, type ModoCor } from '../components/mapa/MapaGeral';
 
 type Edicao =
   | { tipo: 'nenhuma' }
   | { tipo: 'desenhar' }
-  | { tipo: 'forma'; setor: Setor }
-  | { tipo: 'imagem'; limites: [[number, number], [number, number]]; opacidade: number };
+  | { tipo: 'forma'; setor: Setor };
 
 export function Mapa() {
   const qc = useQueryClient();
@@ -80,48 +77,28 @@ export function Mapa() {
   }, [busca, data]);
 
   if (isLoading || !data) return <Loader m="xl" />;
+  const aerea = data.config.imagem_aerea;
   const atualizar = () => qc.invalidateQueries({ queryKey: ['mapa'] });
-
-  async function salvarPosicao() {
-    const m = mapaRef.current;
-    if (!m) return;
-    const c = m.getCenter();
-    try {
-      await api.put('/api/mapa/posicao', { latitude: c.lat, longitude: c.lng, zoom: Math.round(m.getZoom()) });
-      notifications.show({ color: 'teal', message: 'O mapa vai abrir sempre nesta posição.' });
-      atualizar();
-    } catch (e) {
-      notifications.show({ color: 'red', message: mensagemDeErro(e) });
-    }
-  }
 
   async function enviarImagem(arquivo: File | null) {
     const m = mapaRef.current;
     if (!arquivo || !m) return;
-    // Começa no meio da tela, com a proporção da foto; depois é só ajustar o tamanho e a posição.
     const proporcao = await proporcaoDoArquivo(arquivo);
+    // Ao trocar a foto, a nova ocupa o mesmo lugar da antiga (as sepulturas ficam onde estavam).
+    // Na primeira vez, ocupa o meio da tela.
+    const limites = aerea
+      ? limitesProporcionais(aerea.limites[0][0], aerea.limites[0][1], larguraEmMetros(aerea.limites), proporcao)
+      : limitesNaTela(m, proporcao);
     const fd = new FormData();
-    fd.append('limites', JSON.stringify(limitesNaTela(m, proporcao)));
+    fd.append('limites', JSON.stringify(limites));
     fd.append('arquivo', arquivo);
     try {
       notifications.show({ id: 'envio-aerea', loading: true, message: 'Enviando imagem…', autoClose: false });
-      const r = await api.post<{ config: ConfigMapa }>('/api/mapa/imagem-aerea', fd);
-      notifications.update({ id: 'envio-aerea', loading: false, color: 'teal', message: 'Imagem enviada. Agora arraste os cantos até ela casar com o satélite.', autoClose: 8000 });
+      await api.post<{ config: ConfigMapa }>('/api/mapa/imagem-aerea', fd);
+      notifications.update({ id: 'envio-aerea', loading: false, color: 'teal', message: 'Foto do drone enviada.', autoClose: 5000 });
       await atualizar();
-      if (r.config.imagem_aerea) setEdicao({ tipo: 'imagem', limites: r.config.imagem_aerea.limites, opacidade: 0.6 });
     } catch (e) {
       notifications.update({ id: 'envio-aerea', loading: false, color: 'red', message: mensagemDeErro(e), autoClose: 8000 });
-    }
-  }
-
-  async function salvarImagem() {
-    if (edicao.tipo !== 'imagem') return;
-    try {
-      await api.put('/api/mapa/imagem-aerea', { limites: edicao.limites, opacidade: edicao.opacidade });
-      setEdicao({ tipo: 'nenhuma' });
-      atualizar();
-    } catch (e) {
-      notifications.show({ color: 'red', message: mensagemDeErro(e) });
     }
   }
 
@@ -150,8 +127,6 @@ export function Mapa() {
       },
     });
 
-  const semPosicao = !data.config.posicao;
-  const aerea = data.config.imagem_aerea;
 
   return (
     <Box h="calc(100dvh - 56px - 2 * var(--mantine-spacing-md))" style={{ display: 'flex', gap: 'var(--mantine-spacing-md)' }}>
@@ -195,7 +170,7 @@ export function Mapa() {
             <Legenda modo={modo} />
             <Switch label="Mostrar códigos no mapa" checked={codigos} onChange={(e) => setCodigos(e.currentTarget.checked)} size="sm" />
             <Text size="xs" c="dimmed">
-              {data.pins.length} sepultura(s) no mapa. Para posicionar uma sepultura, abra a ficha dela ou use o Cadastro em campo.
+              {data.pins.length} sepultura(s) no mapa. Para posicionar uma sepultura, abra a ficha dela e marque-a sobre a foto do drone.
             </Text>
 
             <Divider label="Setores" labelPosition="left" />
@@ -229,9 +204,6 @@ export function Mapa() {
                   Desenhar novo setor
                 </Button>
                 <Divider label="Administração do mapa" labelPosition="left" />
-                <Button size="xs" variant="default" leftSection={<IconCurrentLocation size={14} />} onClick={salvarPosicao}>
-                  Abrir sempre nesta posição
-                </Button>
                 <FileButton onChange={enviarImagem} accept="image/*">
                   {(p) => (
                     <Button size="xs" variant="default" leftSection={<IconPhotoUp size={14} />} {...p}>
@@ -241,20 +213,6 @@ export function Mapa() {
                 </FileButton>
                 {aerea && (
                   <Group gap="xs" grow>
-                    <Button
-                      size="xs"
-                      variant="default"
-                      onClick={() =>
-                        setEdicao({
-                          tipo: 'imagem',
-                          // Corrige a proporção (imagens enviadas antes ficavam esticadas).
-                          limites: limitesProporcionais(aerea.limites[0][0], aerea.limites[0][1], larguraEmMetros(aerea.limites), aerea.largura / aerea.altura),
-                          opacidade: Math.min(aerea.opacidade, 0.7),
-                        })
-                      }
-                    >
-                      Ajustar posição
-                    </Button>
                     <Button
                       size="xs"
                       variant="subtle"
@@ -271,7 +229,7 @@ export function Mapa() {
                         })
                       }
                     >
-                      Remover
+                      Remover foto
                     </Button>
                   </Group>
                 )}
@@ -282,9 +240,10 @@ export function Mapa() {
       </Card>
 
       <Box style={{ flex: 1, position: 'relative', minWidth: 0 }}>
-        {semPosicao && !aerea && edicao.tipo === 'nenhuma' && (
+        {!aerea && (
           <Alert style={{ position: 'absolute', zIndex: 1000, top: 10, left: 60, right: 60 }} color="blue">
-            Aproxime o mapa até o cemitério{admin ? ' e clique em “Abrir sempre nesta posição”' : ''}. Use a roda do mouse ou o “+”.
+            Nenhuma foto de drone enviada ainda.{' '}
+            {admin ? 'Use “Enviar imagem aérea (drone)” no painel ao lado.' : 'Peça ao administrador para enviar a foto.'}
           </Alert>
         )}
         {edicao.tipo !== 'nenhuma' && (
@@ -304,57 +263,10 @@ export function Mapa() {
                 </Group>
               </Group>
             )}
-            {edicao.tipo === 'imagem' && (
-              <Stack gap="xs">
-                <Text size="sm">
-                  Arraste <b>✥ mover</b> para posicionar e <b>⤡ tamanho</b> para aumentar ou diminuir, até a foto casar com o
-                  satélite. A proporção da foto é mantida.
-                </Text>
-                <Group gap="xs" align="flex-end">
-                  <NumberInput
-                    size="xs"
-                    w={150}
-                    label="Largura da foto (metros)"
-                    value={Math.round(larguraEmMetros(edicao.limites))}
-                    min={5}
-                    max={5000}
-                    onChange={(v) => {
-                      const metros = Number(v);
-                      if (aerea && metros >= 5) {
-                        setEdicao({ ...edicao, limites: limitesProporcionais(edicao.limites[0][0], edicao.limites[0][1], metros, aerea.largura / aerea.altura) });
-                      }
-                    }}
-                  />
-                  <Button
-                    size="xs"
-                    variant="default"
-                    onClick={() => mapaRef.current && aerea && setEdicao({ ...edicao, limites: limitesNaTela(mapaRef.current, aerea.largura / aerea.altura) })}
-                  >
-                    Trazer para o meio da tela
-                  </Button>
-                </Group>
-                <Group>
-                  <Text size="xs">Transparência</Text>
-                  <Slider
-                    flex={1}
-                    min={0.1}
-                    max={1}
-                    step={0.05}
-                    value={edicao.opacidade}
-                    onChange={(v) => setEdicao({ ...edicao, opacidade: v })}
-                    label={(v) => `${Math.round(v * 100)}%`}
-                  />
-                </Group>
-                <Group justify="flex-end" gap="xs">
-                  <Button size="xs" variant="default" onClick={() => setEdicao({ tipo: 'nenhuma' })}>Cancelar</Button>
-                  <Button size="xs" onClick={salvarImagem}>Salvar posição da imagem</Button>
-                </Group>
-              </Stack>
-            )}
           </Card>
         )}
         <MapaGeral
-          dados={edicao.tipo === 'imagem' ? { ...data, config: { ...data.config, imagem_aerea: null } } : data}
+          dados={data}
           modo={modo}
           mostrarCodigos={codigos}
           alvo={alvo}
@@ -363,15 +275,6 @@ export function Mapa() {
         >
           {edicao.tipo === 'desenhar' && <DesenharSetor aoTerminar={terminarDesenho} />}
           {edicao.tipo === 'forma' && <EditarFormaSetor aneis={edicao.setor.poligono} cor={edicao.setor.cor} camadaRef={formaRef} />}
-          {edicao.tipo === 'imagem' && aerea && (
-            <AjustarImagemAerea
-              url={`/api/mapa/imagem-aerea.jpg?v=${aerea.versao}`}
-              limites={edicao.limites}
-              opacidade={edicao.opacidade}
-              proporcao={aerea.largura / aerea.altura}
-              aoMudar={(limites) => setEdicao((e) => (e.tipo === 'imagem' ? { ...e, limites } : e))}
-            />
-          )}
         </MapaGeral>
       </Box>
 

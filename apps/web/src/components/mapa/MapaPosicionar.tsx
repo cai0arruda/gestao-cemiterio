@@ -1,9 +1,8 @@
 import L from 'leaflet';
 import { useEffect } from 'react';
-import { Circle, CircleMarker, MapContainer, Marker, Polygon, Tooltip, useMap, useMapEvents } from 'react-leaflet';
+import { CircleMarker, MapContainer, Marker, Polygon, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import type { PinSepultura } from '@cemiterio/shared';
 import { CamadasBase, COR_SITUACAO, LimitarAImagem, useMapa, vistaInicial } from './base';
-import type { LeituraGps } from './gps';
 
 function Cliques({ aoClicar }: { aoClicar: (lat: number, lng: number) => void }) {
   useMapEvents({ click: (e) => aoClicar(e.latlng.lat, e.latlng.lng) });
@@ -22,34 +21,34 @@ function Seguir({ alvo, zoom }: { alvo: [number, number] | null; zoom: number })
 
 /**
  * Mapa para posicionar UMA sepultura: toque/clique para colocar o pin e arraste para ajustar.
- * Mostra as outras sepulturas como referência e, se houver, a posição do GPS.
+ * Mostra as outras sepulturas como referência sobre a imagem aérea.
  */
 export function MapaPosicionar({
   posicao,
   aoMudar,
   editavel,
-  gps,
   ignorarId,
   altura = 320,
 }: {
   posicao: [number, number] | null;
   aoMudar: (lat: number, lng: number) => void;
   editavel: boolean;
-  gps?: LeituraGps | null;
   ignorarId?: number;
   altura?: number | string;
 }) {
   const { data } = useMapa();
   if (!data) return null;
   const vista = vistaInicial(data.config);
-  const centro: [number, number] = posicao ?? (gps ? [gps.latitude, gps.longitude] : vista.centro);
-  const zoom = posicao || gps ? 20 : vista.zoom;
+  // Com a foto do drone, abre mostrando a foto inteira (aproximar demais deixa a foto borrada).
+  const aerea = !!data.config.imagem_aerea;
+  const centro: [number, number] = aerea ? vista.centro : (posicao ?? vista.centro);
+  const zoom = aerea || !posicao ? vista.zoom : 20;
   const outros = data.pins.filter((x: PinSepultura) => x.id !== ignorarId);
 
   return (
     <MapContainer center={centro} zoom={zoom} maxZoom={22} zoomSnap={0.25} zoomDelta={0.5} wheelPxPerZoomLevel={90} style={{ height: altura, width: '100%', borderRadius: 8 }}>
       <CamadasBase config={data.config} />
-      <LimitarAImagem config={data.config} enquadrar={!posicao && !gps && vista.enquadrar} />
+      <LimitarAImagem config={data.config} enquadrar={vista.enquadrar} />
       {data.setores.map((s) => (
         <Polygon
           key={s.id}
@@ -68,12 +67,6 @@ export function MapaPosicionar({
           <Tooltip>{x.codigo}</Tooltip>
         </CircleMarker>
       ))}
-      {gps && (
-        <>
-          <Circle center={[gps.latitude, gps.longitude]} radius={gps.precisao} pathOptions={{ color: '#228be6', weight: 1, fillOpacity: 0.1 }} interactive={false} />
-          <CircleMarker center={[gps.latitude, gps.longitude]} radius={6} pathOptions={{ color: '#fff', weight: 2, fillColor: '#228be6', fillOpacity: 1 }} interactive={false} />
-        </>
-      )}
       {posicao && (
         <Marker
           position={posicao}
@@ -82,7 +75,7 @@ export function MapaPosicionar({
         />
       )}
       {editavel && <Cliques aoClicar={aoMudar} />}
-      <Seguir alvo={posicao ?? (gps ? [gps.latitude, gps.longitude] : null)} zoom={20} />
+      <Seguir alvo={posicao} zoom={aerea ? vista.zoom : 20} />
     </MapContainer>
   );
 }

@@ -44,15 +44,15 @@
         ▲                         ▲                          ▲
         │                         │                          │
  PC da secretaria (Windows)   Celular da equipe        Celular do sócio
- "App" (atalho Chrome)        cadastro em campo        lê o QR do recibo →
-   └─ USB ─► Epson TM-T20X    (foto + GPS)              página pública de situação
+ "App" (atalho Chrome)        consulta pelo 4G         lê o QR do recibo →
+   └─ USB ─► Epson TM-T20X                             página pública de situação
 ```
 
 ### Online × app local — por que online
 | | Online (escolhido) | App local no PC |
 |---|---|---|
 | QR code do sócio funcionar no celular dele | ✅ Natural | ❌ Precisaria expor o PC da secretaria na internet |
-| Cadastro em campo pelo celular | ✅ Pelo 4G, de qualquer lugar | ⚠️ Só no Wi-Fi da secretaria |
+| Consulta pelo celular da equipe | ✅ Pelo 4G, de qualquer lugar | ⚠️ Só no Wi-Fi da secretaria |
 | Se o PC queimar ou for roubado | ✅ Nada se perde | ❌ Depende do backup |
 | Acessar de casa | ✅ | ❌ |
 | Impressão térmica | ⚠️ Pelo navegador (resolvido no §7) | ✅ Direta |
@@ -79,7 +79,7 @@ também é **PWA**, então pode ser "instalado" no celular.
 | Validação | Zod | Mesmos schemas no front e no back |
 | Frontend | React + Vite + TanStack Query, PWA | SPA servida pelo próprio Fastify |
 | UI | Mantine | Formulários, tabelas e datas em pt-BR |
-| Mapa | Leaflet (camada de imagem trocável) | Gratuito; aceita Esri, Google ou foto de drone |
+| Mapa | Leaflet sobre a foto de drone | Gratuito; sem satélite nem ruas |
 | Imagens | `sharp` | Comprime fotos e gera miniaturas |
 | QR code | `qrcode` | Gera SVG para o recibo |
 | Autenticação | Sessão em cookie seguro + argon2 + limite de tentativas | Agora o sistema fica exposto na internet |
@@ -294,16 +294,9 @@ permite **quitar vários anos de uma vez**, gerando um único recibo que lista o
 
 ## 5. Mapa
 
-### Qual imagem usar
-| Opção | Situação |
-|---|---|
-| **Esri World Imagery** | Gratuito, sem chave, uso livre com atribuição. **Ponto de partida.** |
-| **Google (satélite)** | Pode usar, **mas só pela API oficial do Google Maps** (chave + conta de faturamento). Com 1–2 usuários, o uso fica dentro da cota gratuita. Copiar os blocos ou prints do Google para outro mapa viola os termos de uso deles. |
-| **Foto de drone** | Muito mais nítida, mostra cada sepultura. Melhor resultado, se for possível conseguir. |
-
-A camada de imagem fica atrás de uma configuração (`provedor_mapa`). Na prática, primeiro
-comparamos Esri e Google **no endereço do cemitério**. Se a imagem do Google for bem melhor ali,
-ativamos a API oficial. Se conseguirem o drone, ele vira a camada principal.
+### Imagem
+O fundo do mapa é **somente a foto de drone** do cemitério: mais nítida que satélite e mostra cada
+sepultura. Satélite (Esri/Google) e mapa de ruas foram retirados.
 
 ### Funcionalidades
 - Clicar ou arrastar para posicionar o pin da sepultura.
@@ -311,15 +304,11 @@ ativamos a API oficial. Se conseguirem o drone, ele vira a camada principal.
 - Busca por sócio ou sepultado → o mapa centraliza no pin.
 - Desenho de setores (`leaflet-geoman`).
 
-## 6. Cadastro em campo (celular)
+## 6. Posição das sepulturas (foto de drone)
 
-Com o sistema online, o celular funciona pelo **4G**: não precisa de Wi-Fi nem de modo offline.
-1. Em pé ao lado da sepultura, abrir "Nova sepultura".
-2. Tirar a foto pela câmera do próprio formulário.
-3. O GPS posiciona o pin (precisão de 3–5 m) e o ajuste fino é feito com o dedo.
-4. Vincular ao sócio na hora ou depois.
-
-GPS e câmera exigem HTTPS, que o Caddy já fornece.
+Não há cadastro em campo nem GPS: a posição de cada sepultura é identificada na **foto de drone**.
+Na ficha da sepultura, *Marcar no mapa* abre a imagem aérea; clica-se sobre a sepultura e o pin
+é ajustado arrastando. A foto da sepultura é enviada pela galeria da ficha.
 
 ## 7. Recibo na Epson TM-T20X (sistema online + Windows)
 
@@ -426,7 +415,6 @@ Enquanto não há domínio nem VPS, o sistema roda direto no computador:
 | Banco e fotos | pasta `data/` do projeto | volume no servidor |
 | Impressão | Igual: atalho Chrome com `--kiosk-printing` apontando para localhost | Igual |
 | QR code do recibo | Usa `PUBLIC_URL` do `.env`; abre no celular **conectado ao mesmo Wi-Fi** | Abre de qualquer lugar |
-| Cadastro em campo (GPS/câmera) | Exige HTTPS: certificado local com `mkcert`, ou fica para depois | HTTPS do Caddy |
 | Backup | Snapshot diário em `data/backups/` + botão de exportar | + Litestream externo |
 
 Migrar para o online é copiar a pasta `data/` para o servidor e trocar o `PUBLIC_URL`. Os QR
@@ -444,7 +432,7 @@ Deploy: `git pull && docker compose up -d --build` (dá para automatizar depois 
 | 2 ✅ | Painel "Valores e reajustes", cobranças (anuidade + taxa de associação), pagamentos/estornos, atendimento rápido, recibo de 80 mm, atalho Windows com impressão silenciosa |
 | 3 ✅ | Portal do sócio pelo QR code |
 | 4 ✅ | Sepulturas (código, fotos), sepultamentos, regras do direito de sepultamento, sucessão |
-| 5 ✅ | Mapa (Esri; Google fica opcional, depende de chave da API), pins, setores, imagem de drone, cadastro em campo pelo celular |
+| 5 ✅ | Mapa sobre a foto de drone, pins, setores, imagem de drone (posição das sepulturas marcada sobre ela) |
 | 6 ✅ | Relatórios, inadimplência, caixa diário, cobrança via WhatsApp (`wa.me`) |
 
 Com as fases 1–3, a carteirinha já pode ser aposentada.

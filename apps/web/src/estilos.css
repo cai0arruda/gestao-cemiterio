@@ -126,3 +126,70 @@ body {
 .leaflet-container {
   isolation: isolate;
 }
+
+/* ---------- Animações (discretas: ajudam a perceber a mudança, sem chamar atenção) ---------- */
+
+:root {
+  --saida-suave: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Troca de tela: o conteúdo surge subindo poucos pixels. "backwards" evita deixar
+   transform aplicado depois do fim (o que atrapalharia elementos fixos dentro da tela). */
+@keyframes entrada-tela {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.entrada-tela {
+  animation: entrada-tela 220ms var(--saida-suave) backwards;
+}
+
+/* Menu lateral, linhas de tabela e itens de busca: fundo muda com suavidade no hover. */
+.mantine-AppShell-navbar .mantine-NavLink-root,
+.mantine-Table-tr,
+.item-busca {
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+/* Ícone do item do menu desliza um pouco ao passar o mouse. */
+.mantine-AppShell-navbar .mantine-NavLink-section {
+  transition: transform 160ms var(--saida-suave);
+}
+@media (hover: hover) {
+  .mantine-AppShell-navbar .mantine-NavLink-root:hover .mantine-NavLink-section[data-position='left'] {
+    transform: translateX(2px);
+  }
+}
+
+/* Botões: resposta ao clique (leve afundada) e cor mudando suavemente. */
+.mantine-Button-root,
+.mantine-ActionIcon-root {
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 120ms var(--saida-suave);
+}
+.mantine-Button-root:active:not(:disabled, [data-disabled]),
+.mantine-ActionIcon-root:active:not(:disabled, [data-disabled]) {
+  transform: scale(0.97);
+}
+
+/* Quem pediu menos movimento no sistema operacional não vê animações de deslocamento. */
+@media (prefers-reduced-motion: reduce) {
+  .entrada-tela {
+    animation-name: entrada-tela-fade;
+  }
+  .mantine-AppShell-navbar .mantine-NavLink-root:hover .mantine-NavLink-section,
+  .mantine-Button-root:active,
+  .mantine-ActionIcon-root:active {
+    transform: none !important;
+  }
+}
+@keyframes entrada-tela-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Fora da foto do drone o mapa fica com um fundo neutro (não há satélite nem ruas). */
+.leaflet-container {
+  background: var(--mantine-color-gray-2);
+}
